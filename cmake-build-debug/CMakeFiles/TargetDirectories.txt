@@ -1,0 +1,3 @@
+C:/Users/Mathew/CLionProjects/KingstonianTransit/cmake-build-debug/CMakeFiles/KingstonianTransit.dir
+C:/Users/Mathew/CLionProjects/KingstonianTransit/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/Mathew/CLionProjects/KingstonianTransit/cmake-build-debug/CMakeFiles/rebuild_cache.dir
