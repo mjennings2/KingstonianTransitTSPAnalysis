@@ -10,8 +10,20 @@ int MAX_TRUNC = 5;
 int MIN_EXTE = 0;
 int MAX_EXTE = 15;
 int CHANGE = 1;
+int LOOPS = 100;
 
 int DISTANCE = 150;
+
+
+int * secondsToTime(double seconds){
+    static int time[3];
+
+    time[0] = (int) (seconds) / 3600;
+    time[1] = (int) (seconds - (time[0] * 3600)) / 60;
+    time[2] = (int) (seconds - (time[1] * 60 + time[0] * 3600));
+
+    return time;
+}
 
 int main() {
 
@@ -25,7 +37,21 @@ int main() {
      *
     */
 
-    int i=0;
+
+    int arrivals [4] = {0, 0, 0, 0};
+    int extensions[4] = {0, 0, 0, 0};
+    int truncations [4] = {0, 0, 0, 0};
+    int greenLights [4] = {0, 0, 0, 0};
+
+    int * timeSavedBus;
+    int *averageTimeSavedBus;
+
+
+    int i, j, k, n, hour, maxHours = 24;
+    int averageSecondsSavedBus;
+
+
+
     int trafficCount [3][12][4][1];
     int intersections [4] = { };
     int hours [12] = { 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 };
@@ -35,6 +61,24 @@ int main() {
     int west [3][24];
 
 
+    float greenTimes [n];
+    float amberTimes [n];
+    float allRedTimes [n];
+    float redTimes [n];
+    float extendGreenTimes [n];
+    float speed [4] =  {13.8889, 13.8889, 13.8889, 5.55556};
+    float percentGreen [4];
+    float percentExtend [4];
+    float percentRed [4];
+    float totalLightTime[4];
+    float truncationTime = 0;
+    float extensionTime = 0;
+    float secondsSavedOthers;
+    float secondsLostOthers;
+    float secondsSavedBus;
+
+
+
     // Scan Traffic count and input number of cars in each direction
     FILE * trafficFile;
     trafficFile = fopen("../trafficCount.txt","r");
@@ -42,7 +86,7 @@ int main() {
         printf("Could not open traffic file\n");
     }
 
-    int n;
+
     fscanf(trafficFile,"%d",&n);
     printf("%d\n",n);
 
@@ -59,7 +103,7 @@ int main() {
     // Scan Intersections and input amount of time for each phase of the light in the buses direction of travel.
     // This is for the direction the bus is traveling (EBL/WBL, E/W, NBL/SBL, N/S)
     // Intersection Green Amber All-Red Red
-    i = 0;
+
 
     FILE * lightFile;
     lightFile = fopen("../Intersections.txt","r");
@@ -70,11 +114,7 @@ int main() {
     fscanf(lightFile,"%d",&n);
     printf("%d\n",n);
 
-    float greenTimes [n];
-    float amberTimes [n];
-    float allRedTimes [n];
-    float redTimes [n];
-    float extendGreenTimes [n];
+
 
     for(i = 0; i < n; i++){
         fscanf(lightFile, "%f %f %f %f", &greenTimes[i], &amberTimes[i], &allRedTimes[i], &redTimes[i]);
@@ -101,20 +141,14 @@ int main() {
 
     // Computation
 
-    // Calculate percent chances
-    // given 50 km/h on princess and 20 km/h leaving the Cataraqui center
-    float speed [4] =  {13.8889, 13.8889, 13.8889, 5.55556};
-    float percentGreen [4];
-    float percentExtend [4];
-    float percentRed [4];
-    int timeFor150m [4];
-    float totalLightTime[4];
-
     for(int i = 0; i < 4; i++){
 
         totalLightTime[i] = greenTimes[i] + amberTimes[i] + allRedTimes[i] + redTimes[i];
 
         extendGreenTimes[i] = DISTANCE / speed[i];
+
+        if(extendGreenTimes[i] > MAX_EXTE){}
+        printf("The bus can't make it to the light when it is extended.");
 
         percentGreen[i] = (greenTimes[i] - extendGreenTimes[i]) / totalLightTime[i];
         percentExtend[i] = extendGreenTimes[i] / totalLightTime[i];
@@ -125,37 +159,31 @@ int main() {
 
     srand(time(NULL));
 
-    int hour = 0;
-    int maxHours = 24;
 
-    int j, k;
-    int arrivals [4] = {0, 0, 0, 0};
-    int extensions[4] = {0, 0, 0, 0};
-    int truncations [4] = {0, 0, 0, 0};
-    int greenLights [4] = {0, 0, 0, 0};
     // Simulate bus loop
-    for(i = 0; i < 3; i++) {
-        for (hour = 0; hour < maxHours; hour++) {
-            for (j = 0; j < busesPerHour[hour]; j++) {
+    for (int i = 0; i < LOOPS; ++i) {
+        for (j = 0; j < 3; j++) {
+            for (hour = 0; hour < maxHours; hour++) {
+                for (k = 0; k < busesPerHour[hour]; k++) {
 
-                float r = rand() % 1000;
-                r = r / 1000;
-                printf("%f\n",r);
+                    float r = rand() % 1000;
+                    r = r / 1000;
+                    //printf("%f\n", r);
 
-                if(r <= percentExtend[i]){
-                    extensions[i]++;
-                }else if(r <= (percentExtend[i] + percentRed[i])){
-                    truncations[i]++;
-                }else{
-                    greenLights[i]++;
+                    if (r <= percentExtend[j]) {
+                        extensions[j]++;
+                    } else if (r <= (percentExtend[j] + percentRed[j])) {
+                        truncations[j]++;
+                    } else {
+                        greenLights[j]++;
+                    }
+                    arrivals[j]++;
                 }
-                arrivals[i]++;
             }
         }
     }
 
-    float truncationTime = 0;
-    float extensionTime = 0;
+
 
     for(i = 0; i < 3; i++) {
         extensionTime += extensions[i] * (redTimes[i] + amberTimes[i]);
@@ -168,13 +196,12 @@ int main() {
      * Cars traveling the SAME Direction will save the same amount of time as the bus. And time lost by others is for
      * cars in the oppisite direction of the bus.
      */
-    float timeSavedOthers;
-    float timeLostOthers;
-    float timeSavedBus = (extensionTime + truncationTime);
+
+    secondsSavedBus = (extensionTime + truncationTime);
     for (int i = 0; i < 3; ++i) {
         for (j = 0; j < 12; j++) {
-            timeSavedOthers += (extensionTime + truncationTime) * east[i][hours[j]] + (extensionTime + truncationTime) * west[i][hours[j]];
-            timeLostOthers += (extensionTime + truncationTime) * north[i][hours[j]] + (extensionTime + truncationTime) * south[i][hours[j]];
+            secondsSavedOthers += (extensionTime + truncationTime) * east[i][hours[j]] + (extensionTime + truncationTime) * west[i][hours[j]];
+            secondsLostOthers += (extensionTime + truncationTime) * north[i][hours[j]] + (extensionTime + truncationTime) * south[i][hours[j]];
         }
     }
     // Calculate used based off of x percent compact sedans, y percent large sedans
@@ -191,17 +218,25 @@ int main() {
                i, arrivals[i], extensions[i], truncations[i], greenLights[i]);
     }
 
-    int hoursSavedBus = (int) (timeSavedBus) / 3600;
-    int minSavedBus = (int) (timeSavedBus - (hoursSavedBus * 3600)) / 60;
-    int secSavedBus = (int) (timeSavedBus - (minSavedBus * 60 + hoursSavedBus * 3600));
-    printf("%d h %d m %d s = %d s\n", hoursSavedBus, minSavedBus, secSavedBus, (int) (timeSavedBus));
-    printf("The buses saved a total of %d hours,  min,  sec", (int)(timeSavedBus));
+    timeSavedBus = secondsToTime(secondsSavedBus);
+    printf("The buses saved a total of %d h %d m %d s = %d s\n", *(timeSavedBus + 0), *(timeSavedBus + 1),
+           *(timeSavedBus + 1), (int) (secondsSavedBus));
 
-    //
+    // Average Results:
+    averageSecondsSavedBus = (int) (secondsSavedBus) / LOOPS;
 
+    averageTimeSavedBus = secondsToTime(averageSecondsSavedBus);
+    printf("The buses saved a total of %d h %d m %d s = %d s\n", *(averageTimeSavedBus + 0), *(averageTimeSavedBus + 0),
+           *(averageTimeSavedBus + 0), averageSecondsSavedBus);
 
+    double compactSudan = 0.0002020485333 * averageSecondsSavedOthers;
+    //time in seconds
+    double largeSudan = 0.0004100863889 * averageSecondsSavedOthers;
 
-
+    double transitBus = 0.001019958056 * averageSecondsSavedBus;
+    double gasTotal = compactSudan + largeSudan;
+    double dieselTotal = transitBus;
+    double coTwoTonnes = ((1/424)*gasTotal) + ((1/333)*dieselTotal);
 
 
     return 0;
@@ -210,25 +245,24 @@ int main() {
 
 
 
-
 // 1tonne of CO2 e = 424L of gasoline or 333L of diesel
 
 
-// 0.72737472 Litres per hour of idling for compact sedan
-// when calculating money saved for city, look at updated gas buddy prices
+//0.72737472 Litres per hour of idling for compact sedan
+//when calculating money saved for city, look at updated gas buddy prices/
 // 3.671849 Litres per hour of idling for transit bus
 // 1.476311 Litres per hour of idling for large sedan
 
-
-//compactSudan = 0.0002020485333* timeSavedOther
+/*
+double compactSudan = 0.0002020485333* timeSavedOther
 //time in seconds
-//largeSudan = 0.0004100863889 * timeSavedOther
+largeSudan = 0.0004100863889 * timeSavedOther
 
-//transitBus = 0.001019958056 * timeSavedBus
-//gasTotal = compactSudan + largeSudan
-//dieselTotal = transitTotal
-//coTwoTonnes = ((1/424)*gasTotal) + ((1/333)*dieselTotal)
-
+transitBus = 0.001019958056 * timeSavedBus
+gasTotal = compactSudan + largeSudan
+dieselTotal = transitTotal
+coTwoTonnes = ((1/424)*gasTotal) + ((1/333)*dieselTotal)
+*/
 
 
 
