@@ -10,7 +10,9 @@ int MAX_TRUNC = 5;
 int MIN_EXTE = 0;
 int MAX_EXTE = 15;
 int CHANGE = 1;
-int LOOPS = 100;
+int LOOPS = 1;
+double PERCENT_COMPACT = 0.974346885;
+double PERCENT_LARGE = 0.02565312;
 
 int DISTANCE = 150;
 
@@ -23,6 +25,10 @@ int * secondsToTime(double seconds){
     time[2] = (int) (seconds - (time[1] * 60 + time[0] * 3600));
 
     return time;
+}
+
+double average(double seconds){
+    return (int) (seconds) / LOOPS;
 }
 
 int main() {
@@ -76,6 +82,15 @@ int main() {
     float secondsSavedOthers;
     float secondsLostOthers;
     float secondsSavedBus;
+    float averageSecondsSavedOthers;
+    float averageSecondsLostOthers;
+
+    long long compactSudan;
+    long long largeSudan;
+    long long transitBus;
+    long long gasTotal;
+    long long dieselTotal;
+    long long coTwoTonnes;
 
 
 
@@ -223,20 +238,21 @@ int main() {
            *(timeSavedBus + 1), (int) (secondsSavedBus));
 
     // Average Results:
-    averageSecondsSavedBus = (int) (secondsSavedBus) / LOOPS;
+    averageSecondsSavedBus = average(secondsSavedBus);
+    averageSecondsSavedOthers = average(secondsSavedOthers);
+    averageSecondsLostOthers = average(secondsLostOthers);
 
     averageTimeSavedBus = secondsToTime(averageSecondsSavedBus);
     printf("The buses saved a total of %d h %d m %d s = %d s\n", *(averageTimeSavedBus + 0), *(averageTimeSavedBus + 0),
            *(averageTimeSavedBus + 0), averageSecondsSavedBus);
 
-    double compactSudan = 0.0002020485333 * averageSecondsSavedOthers;
+    compactSudan = 0.0002020485333 * averageSecondsSavedOthers * PERCENT_COMPACT;
     //time in seconds
-    double largeSudan = 0.0004100863889 * averageSecondsSavedOthers;
-
-    double transitBus = 0.001019958056 * averageSecondsSavedBus;
-    double gasTotal = compactSudan + largeSudan;
-    double dieselTotal = transitBus;
-    double coTwoTonnes = ((1/424)*gasTotal) + ((1/333)*dieselTotal);
+    largeSudan = 0.0004100863889 * averageSecondsSavedOthers * PERCENT_LARGE;
+    transitBus = 0.001019958056 * averageSecondsSavedBus;
+    gasTotal = compactSudan + largeSudan;
+    dieselTotal = transitBus;
+    coTwoTonnes = ((1/424)*gasTotal) + ((1/333)*dieselTotal);
 
 
     return 0;
